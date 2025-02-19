@@ -1,0 +1,18 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Backend for E-commerce Wesite for final yaer project",
+  "keywords": [
+    "backend",
+    "e-commerce",
+    "import-export",
+    "trade"
+  ],
+  "license": "ISC",
+  "author": "Smit Patel",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
