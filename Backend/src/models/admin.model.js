@@ -6,28 +6,34 @@ const adminSchema = new Schema(
     {
         email: {
             type: String,
-            require: true,
+            required: true,
             unique: true,
             trim: true
         },
         password: {
             type: String,
-            require: true,
+            required: true,
             trim: true
         },
         name: {
             type: String,
-            require: true,
+            required: true,
             trim: true
         },
         adminId: {
             type: Number
         },
+        key:{
+            type: String,
+        },
         role: {
             type: String,
-            require: true,
+            required: true,
             enum: ["ADMIN", "OWNER", "CREATOR", "DELIVERY"],
-            default: "Admin"
+            default: "ADMIN"
+        },
+        refreshToken :{
+            type: String
         },
         curruntOrders: [
             {
@@ -40,7 +46,7 @@ const adminSchema = new Schema(
 
 adminSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next()
-    this.password = bcrypt.hash(this.password, 10)
+    this.password = await bcrypt.hash(this.password, 10)
     next()
 })
 
@@ -48,7 +54,7 @@ adminSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password)
 }
 
-adminSchema.methods.genrateAccessToken = function () {
+adminSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
             _id: this._id,
@@ -63,7 +69,7 @@ adminSchema.methods.genrateAccessToken = function () {
     )
 }
 
-adminSchema.methods.genrateRefreshToken = function () {
+adminSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
             _id: this._id

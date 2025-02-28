@@ -1,19 +1,19 @@
 import mongoose, { Schema } from "mongoose";
 
-const productSchema = new mongoose.Schema(
+const productSchema = new Schema(
     {
         name: {
             type: String,
-            required: true
+            required: true,
         },
         productId: {
             type: String,
             unique: true,
-            require: true
+            required: true,
         },
         price: {
             type: Number,
-            required: true
+            required: true,
         },
         photos: [
             {
@@ -22,22 +22,24 @@ const productSchema = new mongoose.Schema(
         ],
         description: {
             type: String,
-            required: true
+            required: true,
         },
         category: {
-            type: String,
-            required: true
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Category",
+            required: true,
         },
         stock: {
             type: Number,
-            required: true
+            required: true,
         },
         owner: {
-            type: String,
-            required: true
-        }
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
     }
 );
 
-const Product = mongoose.model('Product', productSchema);
+export const Product = mongoose.model('Product', productSchema);
 

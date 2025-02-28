@@ -5,63 +5,40 @@ import jwt from "jsonwebtoken";
 const userSchema = new Schema(
     {
         email: {
-            Types: String,
-            require: true,
+            type: String,
+            required: true,
             unique: true,
             lowercase: true
         },
         password: {
             type: String,
-            require: [true, "password is required"]
+            required: [true, "password is required"]
         },
         fullName: {
-            Types: String,
-            require: true,
+            type :  String,
+            required: true,
         },
-        phoneNo: {
+        phoneNumber: {
             type: Number,
             unique: true,
-            required: true
+            required: true,
         },
         country: {
             type: String
         },
         address: [
             {
-                addressLine1: {
-                    type: String,
-                    require: true
-                },
-                addressLine2: {
-                    type: String,
-                    require: true
-                },
-                city: {
-                    type: String,
-                    require: true
-                },
-                postalcode: {
-                    type: Number,
-                    require: true
-                },
-                state: {
-                    type: String,
-                    require: true
-                },
-                country: {
-                    type: String,
-                    require: true
-                },
-                number: {
-                    type: Number,
-                    require: true
-                },
-            }
+                type: mongoose.Schema.Types.ObjectId,
+                ref: ""
+            },
         ],
+        refreshToken :{
+            type: String
+        },
         Orders: [
             {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: " "
+                ref: ""
             }
         ]
     }
@@ -69,7 +46,7 @@ const userSchema = new Schema(
 
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next()
-    this.password = bcrypt.hash(this.password, 10)
+    this.password = await bcrypt.hash(this.password, 10)
     next()
 })
 
@@ -77,7 +54,7 @@ userSchema.method.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password)
 }
 
-userSchema.mathod.genrateAccessToken = function () {
+userSchema.method.genrateAccessToken = function () {
     return jwt.sign(
         {
             _id: this._id,
@@ -92,7 +69,7 @@ userSchema.mathod.genrateAccessToken = function () {
     )
 }
 
-userSchema.mathod.genrateRefrashToken = function () {
+userSchema.method.genrateRefrashToken = function () {
     return jwt.sign(
         {
             _id: this._id
