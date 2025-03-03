@@ -3,6 +3,32 @@ import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { User } from "../models/user.model.js"
 
+const generateAccessAndRefreshToken = async(userId)=>{
+    try {
+        //find user
+        //genrate access and refresh token
+        //update the database
+        //save the database
+        //return access and refresh token
+
+        //find user
+        const user = await User.findById(userId)
+
+        //genrate access and refresh token
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken
+
+        //update the database
+        user.refreshToken = refreshToken
+        await user.save({ validateBeforeSave:false })
+
+        return {accessToken, refreshToken}
+
+    } catch (error) {
+        throw new ApiError(500, "Something Went Wrong While Genrating Refresh And Access Token")
+    }
+}
+
 const registerUser = asyncHandler( async(req,res) => {
     //import user details
     //validate user details
@@ -14,7 +40,7 @@ const registerUser = asyncHandler( async(req,res) => {
 
 
     //import user details
-    const {email, password, fullName, phoneNumber, country, A_addressLine1, A_addressLine2, A_city, A_postalcode, A_state, A_country, A_phoneNumber} = req.body
+    const {email, password, fullName, phoneNumber, country} = req.body
 
 
      //validate user details
@@ -39,14 +65,7 @@ const registerUser = asyncHandler( async(req,res) => {
         password, 
         fullName,
         phoneNumber, 
-        country, 
-        A_addressLine1, 
-        A_addressLine2, 
-        A_city, 
-        A_postalcode, 
-        A_state, 
-        A_country, 
-        A_phoneNumber
+        country
     })
 
 
@@ -70,7 +89,63 @@ const registerUser = asyncHandler( async(req,res) => {
 
 })
 
+const loginUser = asyncHandler( async(req, res)=>{
+    //get user details
+    //validate user details
+    //find user
+    //validate password
+    //refresh token and access token
+    //response send cookie
+
+    //get user details
+    const {email, password, phoneNumber} = req.body
+
+    //validate user details
+    if(!email || !phoneNumber){
+        throw new ApiError(401,"Please Enter User Details")
+    }
+
+    //find user
+    const user = await User.findOne({
+        $or: [{email, phoneNumber}]
+    })
+
+    if(!user){
+        throw new ApiError(404,"User Not Found")
+    }
+    //validate password
+    const isPasswordValidate = await user.isPasswordCorrect(password)
+
+    if(!isPasswordValidate){
+        throw new ApiError(401, "Invalid Crendentials")
+    }
+
+
+    
+    //refresh token and access token
+    const {accessToken, refreshToken} = generateAccessAndRefreshToken(user._id)
+    const logedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+    const options = {
+        httpOnly:true,
+        secured: true
+    }
+
+    //response send cookie
+    return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+        new ApiResponse(200,{
+            user: logedInUser,accessToken, refreshToken
+        }),
+        "User Loggend In Successfully"
+    )
+})
+
 export {
     registerUser,
+    loginUser
 }
 

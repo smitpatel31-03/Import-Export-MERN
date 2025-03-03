@@ -3,6 +3,31 @@ import { ApiError } from "../utils/ApiError.js"
 import { Admin } from "../models/admin.model.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 
+const generateAccessAndRefreshToken = async(AdmnId)=>{
+    try {
+        //find admin
+        //genrate accesstoken and refreshtoken
+        //update database
+        //retuen accesstoken and refreshtoken 
+
+        //find admin
+        const admin = await Admin.findById(AdmnId)
+
+        
+        //genrate accesstoken and refreshtoken
+        const accessToken = Admin.generateAccessToken()
+        const refreshToken = Admin.generateRefreshToken()
+
+        Admin.refreshToken = refreshToken
+        await Admin.save({validateBeforeSave:false})
+
+        return {accessToken,refreshToken}
+
+    } catch (error) {
+        throw new ApiError(500,"Something Went Wrong While Genrating Refresh And Access Token")
+    }
+}
+
 const registerAdmin = asyncHandler( async(req,res) => {
     //import data 
     //validate admin
@@ -69,6 +94,62 @@ const registerAdmin = asyncHandler( async(req,res) => {
     )
 })
 
+const loginAdmin = asyncHandler( async(req,res)=>{
+    //get Admin Details
+    //validate Admin Details
+    //find Admin
+    //verify Password
+    //genrate refreshtoken and accesstoken
+    //send cookies
+
+    //get Admin Details
+    const {email, password, adminId} = req.body
+    
+    //validate Admin Details
+    if(!email || !adminId){
+        throw new ApiError(401,"Please Enter The Details")
+    }
+
+    //find Admin
+    const admin = await Admin.findOne({
+        $or: [{email, adminId}]
+    })
+
+    if(!admin){
+        throw new ApiError(404,"Admin Not Found")
+    }
+
+    //verify Password
+    const isPasswordValidate = Admin.isPasswordCorrect(password)
+
+    if(!isPasswordValidate){
+        throw new ApiError(401,"Invalid Credentails");
+    }
+
+    //genrate refreshtoken and accesstoken
+    const {accessToken,refreshToken} = generateAccessAndRefreshToken(admin._id)
+    const loggedInAdmin = await Admin.findById(admin._id).select("-password -refreshToken")
+
+    const options = {
+        httpOnly:true,
+        secured:true
+    }
+
+    //send cookies
+    return res
+    .status(200)
+    .cookie("accessToken",accessToken,options)
+    .cookie("refreshToken",refreshToken,options)
+    .json(
+        200,{
+            Admin: loggedInAdmin, accessToken, refreshToken
+        },
+        "Admin Loggedin Successfully"
+    )
+
+})
+
 export {
     registerAdmin,
+    loginAdmin
 }
