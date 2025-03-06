@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js"
 import { Admin } from "../models/admin.model.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
+import { uploadOnCloudnary } from "../utils/cloudinary.js"
 
 const generateAccessAndRefreshToken = async(AdmnId)=>{
     try {
@@ -243,9 +244,129 @@ const AdminsRefreshAccessToken = asyncHandler( async(req, res)=>{
 
 })
 
+const changeAdminCurruntPassword = asyncHandler(async(req,res)=>{
+    //get oldpassword and new password
+    //check new password and conform password
+    //find user
+    //check old password
+    //save new password
+    //return response
+
+
+    //get oldpassword and new password
+    const {oldPassword,newPassword,conformNewPassword} = req.body
+
+    //check new password and conform password
+    if(newPassword !== conformNewPassword){
+        throw new ApiError(401,"Conform Pawword Is Wrong")
+    }
+
+    //find admin
+    const admin = await Admin.findById(req.admin?._id)
+
+    if(!admin){
+        throw new ApiError(401,"Something Went Wrong While Finding the admin")
+    }
+
+    //check old password
+    const isPasswordValidate = await admin.isPasswordCorrect(oldPassword)
+
+    if(!isPasswordValidate){
+        throw new ApiError(400,"Invalid Old Password")
+    }
+
+    //save new password
+    admin.password = newPassword
+    await admin.save({validateBeforeSave:false})
+
+    //return response
+    res
+    .status(200)
+    .json(
+        new ApiResponse(
+            201,{},"Password Changed Successfully")
+    )
+})
+
+const changeAdminRole = asyncHandler( async(req,res)=>{
+    const {role,key} = req.body
+
+    if(!role || !key){
+        throw new ApiError(401,"All Fields Are Required")
+    }
+
+    if(role==="ADMIN" && key!==process.env.ADMIN_KEY || role==="CREATOR" && key!==process.env.CREATOR_KEY || role==="OWNER" && key!==process.env.OWNER_KEY){
+        throw new ApiError(409, "Enter A Valid Key")
+    }
+
+    const admin = await Admin.findById(req.admin?._id)
+
+    admin.role = role
+    await admin.save({validateBeforeSave:true})
+
+    res
+    .status(200)
+    .json(
+        201,
+        {role},
+        "Admin Role Udated Successfully"
+    )
+})
+
+const changeUserDetails = asyncHandler(async(req,res)=>{
+    //get oldpassword and new password
+    //check new password and conform password
+    //find user
+    //check old password
+    //save new password
+    //return response
+
+
+    //get oldpassword and new password
+    const {email, name} = req.body
+
+    if(!email || !name){
+        throw new ApiError(401,"All Fields Are Compulsory Or Required")
+    }
+
+
+    //find user
+    const admin = await Admin.findOneAndUpdate(
+        req.admin?._id,
+        {
+            email, 
+            name
+        },
+        {
+            new : true
+        }
+    ).select("-password")
+
+    //return response
+    res
+    .status(200)
+    .json(
+        new ApiResponse(
+            201,{},"Accounts Detaied Updated Successfully")
+    )
+})
+
+// const addCatagory = asyncHandler(async(req,res)=>{
+//     const {name,description} = req.body
+
+//     if(!name || !description){
+//         throw new ApiError(401,"All Fileds Are Required");
+//     }
+
+//     const imageLocalPath = req.files?.image[0]?.path
+// })
+
 export {
     registerAdmin,
     loginAdmin,
     logoutAdmin,
-    AdminsRefreshAccessToken
+    AdminsRefreshAccessToken,
+    changeAdminCurruntPassword,
+    changeAdminRole,
+    changeUserDetails
 }

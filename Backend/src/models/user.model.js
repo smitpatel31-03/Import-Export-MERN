@@ -28,8 +28,8 @@ const userSchema = new Schema(
         },
         address: [
             {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: ""
+                type: Schema.Types.ObjectId,
+                ref: "UserAddress",
             },
         ],
         refreshToken :{
@@ -37,7 +37,7 @@ const userSchema = new Schema(
         },
         Orders: [
             {
-                type: mongoose.Schema.Types.ObjectId,
+                type: Schema.Types.ObjectId,
                 ref: ""
             }
         ]
@@ -50,11 +50,11 @@ userSchema.pre("save", async function (next) {
     next()
 })
 
-userSchema.method.isPasswordCorrect = async function (password) {
+userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password)
 }
 
-userSchema.method.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
             _id: this._id,
@@ -69,7 +69,7 @@ userSchema.method.generateAccessToken = function () {
     )
 }
 
-userSchema.method.generateRefreshToken = function () {
+userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
             _id: this._id

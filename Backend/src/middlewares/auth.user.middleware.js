@@ -24,12 +24,15 @@ export const verifyJWTUser = asyncHandler( async(req,_,next)=>{
         //find user
         const user = User.findById(decodedToken?._id).select("-password -refreshToken")
         
+        
         if(!user){
             throw new ApiError(401,"Invalid Token")
         }
     
         //declare user
-        req.user = user
+        req.user = decodedToken
+        // console.log("req.user.schema: ",req.user.schema);
+        
         next()
     } catch (error) {
         throw new ApiError(401, error?.message || "Invalid Token")

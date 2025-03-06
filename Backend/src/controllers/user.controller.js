@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { User } from "../models/user.model.js"
+import { UserAddress } from "../models/usersAddress.model.js"
 import jwt from "jsonwebtoken"
 
 const generateAccessAndRefreshToken = async(userId)=>{
@@ -14,10 +15,15 @@ const generateAccessAndRefreshToken = async(userId)=>{
 
         //find user
         const user = await User.findById(userId)
+        console.log(user);
+        
 
         //genrate access and refresh token
         const accessToken = user.generateAccessToken()
         const refreshToken = user.generateRefreshToken()
+        console.log(" accessToken : ", accessToken);
+        console.log(" refreshToken : ", refreshToken);
+        
 
         //update the database
         user.refreshToken = refreshToken
@@ -98,17 +104,16 @@ const loginUser = asyncHandler( async(req, res)=>{
 
     //get user details
     const {email, password, phoneNumber} = req.body
+    
 
     //validate user details
     if(!email && !phoneNumber){
         throw new ApiError(401,"Please Enter User Details")
     }
-
-    console.log("email : ",email);
     
     //find user
     const user = await User.findOne({
-        $or: [{email, phoneNumber}]
+        $or: [{email} , {phoneNumber }]
     })
 
     if(!user){
@@ -124,7 +129,11 @@ const loginUser = asyncHandler( async(req, res)=>{
 
     
     //refresh token and access token
-    const {accessToken, refreshToken} = generateAccessAndRefreshToken(user._id)
+    const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
+    console.log("accessToken1 : ",accessToken);
+    console.log("refreshToken1 : ",refreshToken);
+    
+
     const logedInUser = await User.findById(user._id).select("-password -refreshToken")
 
     const options = {
@@ -140,8 +149,9 @@ const loginUser = asyncHandler( async(req, res)=>{
     .json(
         new ApiResponse(200,{
             user: logedInUser,accessToken, refreshToken
-        }),
+        },
         "User Loggend In Successfully"
+    )
     )
 })
 
@@ -152,8 +162,11 @@ const logoutUser = asyncHandler( async(req,res)=>{
 
     //find user
     //remove refresh token
+    console.log("req.user._id : ",req.user._id);
+    console.log("req.user : ",req.user);
+    
     await User.findByIdAndUpdate(
-        req.user._id,
+        req.user.id,
         {
             $set:{
                 refreshToken: undefined
@@ -231,10 +244,146 @@ const UsersRefreshAccessToken = asyncHandler( async(req, res)=>{
     }
 })
 
+const addUserAddress = asyncHandler(async(req,res)=>{
+    //get address details
+    //check all adddress fields
+    //import users
+    //save the data in database
+    //response user
+
+    //get address details
+    const {name,addressLine1,addressLine2,city,postalCode,state,country,mobileNumber} = req.body
+
+    if([name,addressLine1,addressLine2,city,postalCode,state,country,mobileNumber].some((fild)=>fild?.trim==="")){
+        throw new ApiError(400,"All Fields Are Compulsary Or Required")
+    }
+
+    // console.log(req.user);
+    // console.log(req.user.paths);
+    
+    //import users
+    const user = await User.findById(req.user?._id)
+
+    const addAddress = await UserAddress.create({
+        name,
+        addressLine1,
+        addressLine2,
+        city,
+        postalCode,
+        state,
+        country,
+        mobileNumber,
+        user: req.user?._id
+    })
+
+    
+    console.log(addAddress);
+    console.log(user.address);
+    const addAddressToUser = user.address.push(addAddress)
+    await user.save({validateBeforeSave: false})
+
+    res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            {addAddressToUser},
+            "User Address Add Successfully"
+        )
+    )
+})
+
+const changeUsersCurruntPassword = asyncHandler(async(req,res)=>{
+    //get oldpassword and new password
+    //check new password and conform password
+    //find user
+    //check old password
+    //save new password
+    //return response
+
+
+    //get oldpassword and new password
+    const {oldPassword,newPassword,conformNewPassword} = req.body
+
+    //check new password and conform password
+    if(newPassword !== conformNewPassword){
+        throw new ApiError(401,"Conform Pawword Is Wrong")
+    }
+
+    //find user
+    const user = await User.findById(req.user?._id)
+
+    if(!user){
+        throw new ApiError(401,"Something Went Wrong While Finding the user")
+    }
+
+    //check old password
+    const isPasswordValidate = await user.isPasswordCorrect(oldPassword)
+
+    if(!isPasswordValidate){
+        throw new ApiError(400,"Invalid Old Password")
+    }
+
+    //save new password
+    user.password = newPassword
+    await user.save({validateBeforeSave:false})
+
+    //return response
+    res
+    .status(200)
+    .json(
+        new ApiResponse(
+            201,{},"Password Changed Successfully")
+    )
+})
+
+const changeUserDetails = asyncHandler(async(req,res)=>{
+    //get oldpassword and new password
+    //check new password and conform password
+    //find user
+    //check old password
+    //save new password
+    //return response
+
+
+    //get oldpassword and new password
+    const {email, phoneNumber, fullName, country} = req.body
+
+    if([email, phoneNumber, fullName, country].some((filed)=>filed.trim()==="")){
+        throw new ApiError(401,"All Fields Are Compulsory Or Required")
+    }
+
+
+    //find user
+    const user = await User.findOneAndUpdate(
+        req.user?._id,
+        {
+            email, 
+            phoneNumber, 
+            fullName,
+            country
+        },
+        {
+            new : true
+        }
+    ).select("-password")
+
+    //return response
+    res
+    .status(200)
+    .json(
+        new ApiResponse(
+            201,{},"Accounts Detaied Updated Successfully")
+    )
+})
+
 export {
     registerUser,
     loginUser,
     logoutUser,
-    UsersRefreshAccessToken
+    UsersRefreshAccessToken,
+    addUserAddress,
+    changeUsersCurruntPassword,
+    changeUserDetails
 }
 
