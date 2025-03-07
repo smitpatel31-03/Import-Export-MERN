@@ -14,6 +14,10 @@ const uploadOnCloudnary = async(localFilePath)=>{
         const response = await cloudinary.uploader.upload(localFilePath, {
             resource_type: "auto"
         })
+
+        fs.unlinkSync(localFilePath)
+        
+        return response.url
     } catch (error) {
         fs.unlinkSync(localFilePath) //remove the locallysaved temorary file as the upload opration got failed
         return null

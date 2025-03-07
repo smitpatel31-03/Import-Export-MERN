@@ -2,20 +2,16 @@ import mongoose, { Schema } from "mongoose"
 
 const curruntOrderSchema = new Schema(
     {
-        curruntOrders:[
-            {
-                curruntOrder:{
-                    type: Schema.Types.ObjectId,
-                    ref:"Order"
-                },
-                status:{
-                    type: String,
-                    enum : ["PENDING","PROCESSING ","SHIPPED","IN TRANSIT","CUSTOMS CLEARANCE","DELIVERED","CANCELLED","FAILED"],
-                    default: "PENDING"
-                }
-            },
-        ]
-    }
+        curruntOrder: {
+            type: Schema.Types.ObjectId,
+            ref: "Order"
+        },
+        status: {
+            type: String,
+            enum: ["PENDING", "PROCESSING ", "SHIPPED", "IN TRANSIT", "CUSTOMS CLEARANCE", "DELIVERED", "CANCELLED", "FAILED"],
+            default: "PENDING"
+        }
+    },
 )
 
 export const CurruntOrder = new mongoose.model("CurruntOrder", curruntOrderSchema) 
